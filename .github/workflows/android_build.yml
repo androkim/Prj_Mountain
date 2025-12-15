@@ -1,4 +1,4 @@
-# android_build.yml
+# android_build.yml (이전과 동일한 내용으로 유지)
 name: Android APK Build
 
 on:
@@ -113,7 +113,7 @@ jobs:
       run: |
         # Buildozer가 직접적으로 NDK를 다운로드하는 것을 방지하기 위해 Buildozer의
         # NDK 경로 탐색을 위한 환경 변수를 Buildozer에 명시적으로 주입합니다.
-        # 이렇게 하면 buildozer.spec의 android.ndk_path와 연계되어 미리 설치된 NDK를 사용하게 됩니다.
+        # 이렇게 하면 buildozer.spec의 android.ndk_path 설정 없이도 미리 설치된 NDK를 사용하게 됩니다.
         echo "ANDROID_NDK_HOME=${{ env.ANDROID_SDK_ROOT }}/ndk/25.2.9519653" >> "$GITHUB_ENV"
         echo "ANDROID_NDK_ROOT=${{ env.ANDROID_SDK_ROOT }}/ndk/25.2.9519653" >> "$GITHUB_ENV"
         
