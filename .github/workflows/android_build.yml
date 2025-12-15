@@ -18,10 +18,18 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v4 # 프로젝트 코드 가져오기
 
-    - name: Set up Python
+    - name: Set up Python and Dependencies
       uses: actions/setup-python@v5
       with:
         python-version: '3.10' # 검증된 Python 3.10 버전 사용
+    
+    # --- Buildozer 및 핵심 파이썬 의존성 설치 ---
+    - name: Install Buildozer and Dependencies
+      run: |
+        python -m pip install --upgrade pip setuptools wheel
+        # Buildozer와 Cython을 설치 (최신 버전 사용 권장)
+        pip install buildozer cython 
+        pip install appdirs packaging colorama jinja2 toml build # 기타 Buildozer 관련 의존성
 
     - name: Set up Java Development Kit (JDK)
       uses: actions/setup-java@v4
@@ -29,141 +37,77 @@ jobs:
         distribution: 'temurin'
         java-version: '17' # 검증된 JDK 17 버전 사용
 
-    # --- Python-for-Android (P4A) 클론 및 설치 ---
-    # Python-for-Android를 Buildozer의 작업 공간 내에 직접 클론하여 경로 문제를 해결
-    - name: Ensure Python-for-Android is Cloned to Buildozer Working Directory
-      run: |
-        # Buildozer가 내부적으로 사용하는 python-for-android 경로를 따릅니다.
-        # 이 경로는 $GITHUB_WORKSPACE/.buildozer/android/platform/python-for-android가 됩니다.
-        P4A_DIR="${{ github.workspace }}/.buildozer/android/platform/python-for-android"
-        
-        if [ ! -d "${P4A_DIR}" ]; then
-          mkdir -p "$(dirname "${P4A_DIR}")" # P4A 폴더의 상위 디렉토리 생성
-          git clone --depth 1 https://github.com/kivy/python-for-android.git "${P4A_DIR}" # master 브랜치로 클론 (default)
-          echo "python-for-android cloned to: ${P4A_DIR}"
-        else
-          echo "python-for-android directory already exists, pulling latest master."
-          git -C "${P4A_DIR}" fetch origin # 원격 저장소 최신 변경사항 가져오기
-          git -C "${P4A_DIR}" checkout master # master 브랜치로 체크아웃
-          git -C "${P4A_DIR}" pull origin master # 최신 master 브랜치로 업데이트
-          echo "python-for-android updated to latest master."
-        fi
-        
-        # P4A를 Python 환경에 등록 (editable 모드)
-        pip install -e "${P4A_DIR}"
-        echo "Python-for-Android installed in editable mode from: ${P4A_DIR}"
-
-    # --- Buildozer 및 Kivy 관련 모든 캐시를 강제로 삭제 ---
-    # 이전 빌드의 잔여물로 인한 문제를 방지하기 위해 완전히 초기화
+    # --- Buildozer 및 Kivy 관련 모든 캐시를 강제로 삭제 (jnius.c 오류 방지 핵심) ---
     - name: Force Clean All Buildozer and Kivy Caches
       run: |
-        echo "Removing all Buildozer caches and temporary build files."
-        rm -rf "$HOME/.buildozer" # Buildozer의 빌드 캐시 삭제
-        rm -rf "$HOME/.local/share/kivy-android" # Kivy-android 관련 로컬 캐시 삭제
+        echo "Removing all Buildozer caches and temporary build files for a clean start."
+        # $HOME/.buildozer에는 SDK, NDK, 빌드 캐시 등이 저장되어 있어 이를 삭제하여 환경을 초기화합니다.
+        rm -rf "$HOME/.buildozer" 
+        rm -rf "$HOME/.local/share/kivy-android"
         echo "All relevant Buildozer and Kivy caches completely removed."
-
-    # --- Buildozer가 SDK/NDK를 찾을 경로를 미리 준비 ---
-    # Buildozer가 고집스럽게 ~/.buildozer/... 경로를 찾으므로, 그 경로에 맞춰 준비
-    - name: Prepare Buildozer's internal SDK/NDK paths
-      run: |
-        mkdir -p "$HOME/.buildozer/android/platform/android-sdk"
-        mkdir -p "$HOME/.buildozer/android/platform/android-ndk"
-        echo "Created internal Buildozer SDK/NDK target directories."
-
+        
     # --- Android SDK Command-line Tools 설치 (Buildozer의 내부 경로에) ---
     - name: Install Android SDK Command-line Tools
       run: |
         BUILD_SDK_ROOT="$HOME/.buildozer/android/platform/android-sdk" # Buildozer가 찾을 최종 SDK 경로
         mkdir -p "${BUILD_SDK_ROOT}/cmdline-tools"
+        # SDK Command-line Tools 다운로드 및 압축 해제
         curl -L https://dl.google.com/android/repository/commandlinetools-linux-6858069_latest.zip -o android-cmdline-tools.zip
         unzip -q android-cmdline-tools.zip -d "${BUILD_SDK_ROOT}/cmdline-tools"
-        mv "${BUILD_SDK_ROOT}/cmdline-tools/cmdline-tools" "${BUILD_SDK_ROOT}/cmdline-tools/latest" # latest 폴더로 이동
-      env: # 현재 step에서만 ANDROID_SDK_ROOT 환경 변수 설정
+        # latest 폴더로 이동 (sdkmanager 실행에 필요)
+        mv "${BUILD_SDK_ROOT}/cmdline-tools/cmdline-tools" "${BUILD_SDK_ROOT}/cmdline-tools/latest" 
+      env: 
         ANDROID_SDK_ROOT: "$HOME/.buildozer/android/platform/android-sdk"
 
-    # --- Android SDK Tools를 PATH에 추가 및 레거시 심볼릭 링크 생성 ---
-    # sdkmanager 및 avdmanager를 시스템에서 찾을 수 있도록 PATH 설정
-    - name: Add Android SDK tools to PATH
+    # --- Android SDK Tools를 PATH에 추가 및 환경 변수 설정 ---
+    - name: Configure Android SDK Environment Variables
       run: |
         BUILD_SDK_ROOT="$HOME/.buildozer/android/platform/android-sdk"
-        echo "ANDROID_SDK_ROOT=${BUILD_SDK_ROOT}" >> "$GITHUB_ENV" # 전역 환경 변수로 설정
-        echo "${BUILD_SDK_ROOT}/cmdline-tools/latest/bin" >> "$GITHUB_PATH" # PATH에 추가
+        # 환경 변수 설정
+        echo "ANDROID_SDK_ROOT=${BUILD_SDK_ROOT}" >> "$GITHUB_ENV" 
+        echo "ANDROID_HOME=${BUILD_SDK_ROOT}" >> "$GITHUB_ENV"
+        # PATH 설정
+        echo "${BUILD_SDK_ROOT}/cmdline-tools/latest/bin" >> "$GITHUB_PATH" 
         echo "${BUILD_SDK_ROOT}/platform-tools" >> "$GITHUB_PATH"
-        mkdir -p "${BUILD_SDK_ROOT}/tools/bin" # 레거시 경로 생성
-        ln -sf "${BUILD_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" "${BUILD_SDK_ROOT}/tools/bin/sdkmanager" # sdkmanager 심볼릭 링크
-        ln -sf "${BUILD_SDK_ROOT}/cmdline-tools/latest/bin/avdmanager" "${BUILD_SDK_ROOT}/tools/bin/avdmanager" # avdmanager 심볼릭 링크
+        # 레거시 경로 (안전하게 유지)
+        mkdir -p "${BUILD_SDK_ROOT}/tools/bin"
+        ln -sf "${BUILD_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" "${BUILD_SDK_ROOT}/tools/bin/sdkmanager"
 
     # --- Android SDK 라이선스 동의 ---
-    # 모든 SDK 구성 요소에 대한 라이선스를 자동으로 동의
     - name: Accept Android SDK licenses
-      run: yes | sdkmanager --licenses --sdk_root="$HOME/.buildozer/android/platform/android-sdk"
+      run: yes | sdkmanager --licenses
 
-    # --- 필수 Android SDK, Build-Tools, NDK 설치 (Buildozer 내부 경로에) ---
-    # Buildozer 스펙에 정의된 버전과 호환되는 SDK 구성 요소들을 설치
-    - name: Install Android SDK, Build-Tools, and NDK
+    # --- 필수 Android SDK, Build-Tools, NDK 설치 ---
+    # buildozer.spec에 정의된 버전과 일치하도록 확인하세요.
+    - name: Install Required Android Components
       run: |
         sdkmanager \
           "platforms;android-33" \
           "build-tools;33.0.2" \
           "ndk;25.2.9519653" \
           "platform-tools" \
-          --sdk_root="$HOME/.buildozer/android/platform/android-sdk" # SDK_ROOT 변경
+          --sdk_root="$HOME/.buildozer/android/platform/android-sdk"
 
     # --- 네이티브 라이브러리 빌드를 위한 Autotools 의존성 설치 ---
-    # libffi 등 C/C++ 네이티브 모듈 컴파일에 필요한 도구들을 설치
     - name: Install Autotools dependencies for native libraries
       run: |
         sudo apt-get update
         sudo apt-get install -y autoconf automake libtool m4 pkg-config patch
 
-    # --- Buildozer 및 핵심 파이썬 의존성 설치 ---
-    - name: Install Buildozer and Dependencies
-      run: |
-        python -m pip install --upgrade pip setuptools wheel
-        pip install buildozer==1.5.0 cython==0.29.36 # Buildozer와 Cython 버전 고정
-        pip install appdirs packaging colorama jinja2 toml build # 기타 Buildozer 관련 의존성
-
-    # --- 빌드 전에 GitHub Actions 캐시는 사용하지 않도록 주석 처리 유지 (충돌 방지) ---
-    # - name: Cache Buildozer Android Dependencies
-    #   uses: actions/cache@v4
-    #   with:
-    #     path: |
-    #       .buildozer/android/platform/android-sdk
-    #       .buildozer/android/platform/android-ndk-*
-    #       .buildozer/android/platform/apache-ant-*
-    #     key: ${{ runner.os }}-buildozer-android-dependencies-${{ hashFiles('buildozer.spec') }}-${{ hashFiles('requirements.txt') }}
-    #     restore-keys: |
-    #       ${{ runner.os }}-buildozer-android-dependencies-
-
     # --- Build Android APK (Debug) ---
-    # 모든 환경 변수를 설정하고, 핵심 레시피를 클린한 후 최종 빌드 수행
     - name: Build Android APK (Debug)
       run: |
-        # Buildozer가 직접적으로 찾으려 하는 경로로 모든 환경 변수 강제 설정
-        ANDROID_HOME="$HOME/.buildozer/android/platform/android-sdk"
-        NDK_PATH="$ANDROID_HOME/ndk/25.2.9519653"
-        
-        export ANDROID_HOME=$ANDROID_HOME
-        export ANDROID_SDK_ROOT=$ANDROID_HOME
+        # NDK 경로를 환경 변수에 명시적으로 설정하여 Buildozer가 정확히 찾도록 합니다.
+        NDK_PATH="$HOME/.buildozer/android/platform/android-sdk/ndk/25.2.9519653"
         export ANDROID_NDK_HOME=$NDK_PATH
         export ANDROID_NDK_ROOT=$NDK_PATH
         
-        # P4A가 빌드 시 사용할 호스트 Python의 절대 경로를 명시하여 버전 불일치 문제 해결
-        export HOSTPYTHON="${{ runner.tool_cache }}/Python/3.10.19/x64/bin/python"
-        export BUILD_HOST=x86_64-pc-linux-gnu
-        export BUILD_CC=gcc
-
-        # 문제가 발생했던 핵심 레시피(kivy, jnius, android)를 빌드 직전에 완전히 초기화
-        echo "Forcing clean and rebuild of core recipes (kivy, jnius, android)..."
-        buildozer android clean --recipes=kivy,jnius,android 
-        # 이 명령은 `buildozer debug` 전에 P4A 레시피들이 처음부터 다시 빌드되도록 강제합니다.
-
-        # 최종 디버그 APK 빌드 시작 (clean 후에는 자동으로 모든 레시피를 재빌드 시도함)
+        # 이전 빌드에서 문제가 되었던 공백 경로 사용을 피하도록 Buildozer에 맡기고 바로 빌드 시작
         buildozer android debug
-
+      
     # --- 빌드된 APK 파일을 아티팩트로 업로드 ---
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: my-app-apk # 업로드될 아티팩트의 이름
-        path: bin/*.apk # 빌드된 APK 파일의 경로 (buildozer가 생성하는 경로)
+        name: my-app-apk
+        path: bin/*.apk
