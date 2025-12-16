@@ -1,4 +1,4 @@
-# android_build.yml (이전과 동일한 내용으로 유지)
+# android_build.yml
 name: Android APK Build
 
 on:
@@ -27,7 +27,9 @@ jobs:
     - name: Install Buildozer and Core Dependencies
       run: |
         python -m pip install --upgrade pip setuptools wheel
-        pip install buildozer==1.5.0 cython==0.29.36 # Buildozer와 Cython 버전 고정 (매우 중요!)
+        pip install buildozer==1.5.0 cython==0.29.36 # Buildozer와 Cython 버전 고정
+        # pip install sh==1.14.3 --ignore-installed # 'sh' 충돌 방지 및 Buildozer 요구사항 충족
+        pip install "sh<3.0,>=2" # python-for-android가 요구하는 sh 버전 설치
         pip install appdirs packaging colorama jinja2 toml build # 기타 Buildozer 관련 의존성
 
     - name: Set up Java Development Kit (JDK)
