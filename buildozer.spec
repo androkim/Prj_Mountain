@@ -18,7 +18,7 @@ requirements = python3,kivy==2.2.1,kivymd==1.1.1,requests,plyer
 android.permissions = INTERNET,ACCESS_FINE_LOCATION,ACCESS_NETWORK_STATE,ACCESS_COARSE_LOCATION
 android.add_src =
 android.add_libs =
-android.ndk_api = 32
+android.ndk_api = 21
 android.extra_system_libs =
 android.java_compiler = javac
 android.optimizations = 0
