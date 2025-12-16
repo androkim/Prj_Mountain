@@ -133,7 +133,7 @@ jobs:
         buildozer android clean --recipes=kivy,jnius,android 
         
         # --allow-minsdk-ndkapi-mismatch 옵션 추가
-        buildozer android debug -- --allow-minsdk-ndkapi-mismatch 
+        buildozer android debug
       
     # --- 빌드된 APK 파일을 아티팩트로 업로드 ---
     - name: Upload APK Artifact
