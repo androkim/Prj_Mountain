@@ -30,8 +30,7 @@ jobs:
         pip install buildozer==1.5.0 cython==0.29.36 # Buildozer와 Cython 버전 고정
         
         # P4A가 요구하는 sh<3.0,>=2 조건을 명시적으로 충족시키고 기존 설치된 sh를 강제 교체
-        # jnius 컴파일에 영향을 줄 수 있으므로 정확한 버전으로 캐시 없이 설치 시도
-        pip install "sh<3.0,>=2" --ignore-installed --no-cache-dir 
+        pip install "sh<3.0,>=2" --ignore-installed --no-cache-dir # 충돌하는 sh 무시하고 캐시 없이 설치
         
         pip install appdirs packaging colorama jinja2 toml build # 기타 Buildozer 관련 의존성
 
@@ -121,8 +120,7 @@ jobs:
         echo "ANDROID_NDK_HOME=${{ env.ANDROID_SDK_ROOT }}/ndk/25.2.9519653" >> "$GITHUB_ENV"
         echo "ANDROID_NDK_ROOT=${{ env.ANDROID_SDK_ROOT }}/ndk/25.2.9519653" >> "$GITHUB_ENV"
         
-        # Buildozer가 jnius.c를 찾지 못하는 문제 해결을 위한 PYTHONPATH 조정 시도
-        # P4A의 build-arm64-v8a 아래 파이썬 인스톨 경로를 PYTHONPATH에 추가하여 헤더 파일 탐색 강화
+        # jnius.c를 찾지 못하는 문제 해결을 위한 PYTHONPATH 조정 시도
         echo "PYTHONPATH=${{ github.workspace }}/.buildozer/android/platform/build-arm64-v8a/build/python-installs/chungahmalpine/arm64-v8a/include/python3.1:${{ env.PYTHONPATH }}" >> "$GITHUB_ENV"
 
 
@@ -134,7 +132,8 @@ jobs:
 
         buildozer android clean --recipes=kivy,jnius,android 
         
-        buildozer android debug
+        # --allow-minsdk-ndkapi-mismatch 옵션 추가
+        buildozer android debug -- --allow-minsdk-ndkapi-mismatch 
       
     # --- 빌드된 APK 파일을 아티팩트로 업로드 ---
     - name: Upload APK Artifact
