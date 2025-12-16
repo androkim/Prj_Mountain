@@ -14,7 +14,7 @@ android.ndk = 25
 android.app_version = 0.1
 android.app_version_code = 1
 android.archs = arm64-v8a
-requirements = python3,kivy==2.2.1,kivymd==1.1.1,requests,plyer  # 변경됨: python3==3.10.9 -> python3
+requirements = python3,kivy==2.2.1,kivymd==1.1.1,requests,plyer
 android.permissions = INTERNET,ACCESS_FINE_LOCATION,ACCESS_NETWORK_STATE,ACCESS_COARSE_LOCATION
 android.add_src =
 android.add_libs =
