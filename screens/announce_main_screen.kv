@@ -1,0 +1,60 @@
+# screens/announce_main_screen.kv
+#:kivy 2.2.1
+#:import dp kivy.metrics.dp
+#:import DEFAULT_FONT kivy.core.text.DEFAULT_FONT
+
+#:import MDList kivymd.uix.list.MDList
+#:import TwoLineListItem kivymd.uix.list.TwoLineListItem
+#:import ScrollView kivy.uix.scrollview.ScrollView
+#:import MDLabel kivymd.uix.label.MDLabel
+#:import MDRaisedButton kivymd.uix.button.MDRaisedButton
+#:import MDBoxLayout kivymd.uix.boxlayout.MDBoxLayout
+
+<AnnounceMainScreen>:
+    name: "announce_main"
+    md_bg_color: 0.95, 0.95, 0.95, 1
+
+    MDBoxLayout:
+        orientation: 'vertical'
+        padding: dp(10)
+        spacing: dp(10)
+        # 이 MDBoxLayout에 'announcements_container_box' ID를 부여하여 on_kv_post에서 오류 체크 시 활용할 수 있습니다.
+        # id: announcements_container_box
+
+        MDLabel:
+            text: "[b]공지사항[/b]"
+            font_style: "H6"
+            halign: "center"
+            text_color: 0, 0, 0, 1
+            size_hint_y: None
+            height: self.texture_size[1] + dp(10)
+            font_name: DEFAULT_FONT
+            markup: True
+
+        ScrollView:
+            id: announcement_scroll_view # ScrollView에 ID를 부여합니다.
+            MDBoxLayout: # ScrollView는 단 하나의 자식만 가질 수 있으므로 MDBoxLayout로 묶습니다.
+                orientation: 'vertical'
+                spacing: dp(5) # 리스트 항목 간 간격
+                adaptive_height: True # 자식 위젯에 따라 높이 조절
+
+                MDList: # MDList는 ScrollView의 자식인 MDBoxLayout의 자식입니다.
+                    padding: dp(5)
+                    spacing: dp(5)
+                    adaptive_height: True
+
+        MDRaisedButton:
+            text: "새 공지사항 추가"
+            font_name: DEFAULT_FONT
+            size_hint_y: None
+            height: dp(48)
+            pos_hint: {'center_x': 0.5}
+            on_release: root.show_add_announcement_dialog()
+
+        MDRaisedButton:
+            text: "뒤로"
+            font_name: DEFAULT_FONT
+            size_hint_y: None
+            height: dp(48)
+            pos_hint: {'center_x': 0.5}
+            on_release: root._go_back_to_main_screen()

@@ -1,0 +1,153 @@
+#:kivy 2.2.1
+#:import NoTransition kivy.uix.screenmanager.NoTransition
+#:import dp kivy.metrics.dp
+#:import app __main__.AlpineApp
+#:import RotatableImage screens.rotatable_image.RotatableImage
+
+#:set korean_font "fonts/NotoSansKR-Regular.ttf"
+#:include screens/main_screen.kv
+
+<NavButton@ButtonBehavior+MDBoxLayout>:
+    orientation: 'vertical'
+    icon: "home"
+    text: "메뉴"
+    spacing: dp(2)
+    padding: [0, dp(5), 0, dp(5)]
+    size_hint_x: 1
+    
+    MDIcon:
+        icon: root.icon
+        halign: "center"
+        font_size: dp(24)
+        theme_text_color: "Custom"
+        text_color: 0.3, 0.3, 0.3, 1 
+        size_hint_y: None
+        height: dp(24)
+
+    MDLabel:
+        text: root.text
+        font_name: korean_font
+        font_style: "Caption"
+        halign: "center"
+        theme_text_color: "Custom"
+        text_color: 0.3, 0.3, 0.3, 1 
+        size_hint_y: None
+        height: dp(14)
+
+MDBoxLayout:
+    orientation: "vertical"
+    md_bg_color: 1, 1, 0.94, 1 
+
+    MDBoxLayout:
+        id: top_app_bar 
+        size_hint_y: None
+        height: dp(56) 
+        padding: [dp(16), 0, dp(16), 0]
+        spacing: dp(8)
+        md_bg_color: 1, 1, 0.94, 1 
+        
+        MDIcon:
+            icon: "terrain"  
+            theme_text_color: "Custom"
+            text_color: 0.1, 0.5, 0.3, 1 
+            size_hint: None, None
+            size: dp(24), dp(24)
+            pos_hint: {"center_y": .5}
+
+        MDLabel:
+            text: "걷고 오르고"
+            font_name: korean_font
+            font_style: "H6"
+            bold: True
+            halign: "left" 
+            pos_hint: {"center_y": .5}
+
+        RelativeLayout:
+            size_hint: None, None
+            size: dp(40), dp(40) 
+            pos_hint: {"center_y": .5}
+
+            Image:
+                source: 'images/compass_dial.png' 
+                size_hint: 1, 1 
+                pos_hint: {'center_x': 0.5, 'center_y': 0.5} 
+                allow_stretch: True
+                keep_ratio: True
+
+            RotatableImage: 
+                id: top_app_bar_compass_image 
+                source: 'images/compass_needle.png' 
+                size_hint: 1, 1 
+                pos_hint: {'center_x': 0.5, 'center_y': 0.5} 
+                allow_stretch: True
+                keep_ratio: True
+                angle: self.angle 
+                canvas.before:
+                    PushMatrix 
+                    Rotate:
+                        angle: self.angle 
+                        axis: 0, 0, 1 
+                        origin: self.center_x, self.center_y 
+                canvas.after:
+                    PopMatrix 
+
+        MDIconButton:
+            icon: "bookmark-outline" 
+            pos_hint: {"center_y": .5}
+
+        MDIconButton:
+            icon: "bell-outline" 
+            pos_hint: {"center_y": .5}
+
+    ScreenManager:
+        id: screen_manager 
+        transition: NoTransition() 
+        current: "main_screen" 
+        
+        MainScreen:
+            name: "main_screen"
+        AnnounceMainScreen: 
+            name: "announce_main"
+        CompassScreen: 
+            name: "compass_screen"
+        SettingsMainScreen: 
+            name: "settings_main"
+        
+    MDSeparator:
+        height: dp(1) 
+
+    MDBoxLayout:
+        orientation: "horizontal" 
+        size_hint_y: None 
+        height: dp(65) 
+        md_bg_color: 1, 1, 1, 1 
+        
+        NavButton: 
+            icon: "home-outline"
+            text: "홈"
+            on_release:
+                screen_manager.current = "main_screen"
+
+        NavButton: 
+            icon: "chat-outline"
+            text: "커뮤니티"
+            on_release:
+                print("커뮤니티 클릭됨") 
+
+        NavButton: 
+            icon: "thumb-up-outline"
+            text: "후기"
+            on_release:
+                print("후기 클릭됨") 
+
+        NavButton: 
+            icon: "store-outline"
+            text: "스토어"
+            on_release:
+                print("스토어 클릭됨") 
+
+        NavButton: 
+            icon: "account-outline"
+            text: "마이"
+            on_release:
+                print("마이페이지 클릭됨") 

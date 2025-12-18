@@ -1,0 +1,14 @@
+# screens/main_screen.kv - Kivy 렌더링 환경 테스트용
+#:kivy 2.2.1
+#:import Color kivy.graphics.Color
+#:import Rectangle kivy.graphics.Rectangle
+
+<MainScreen>:
+    name: "main_screen"
+    # MainScreen의 canvas에 직접 빨간색 사각형을 그립니다.
+    canvas:
+        Color:
+            rgba: 1, 1, 0.94, 1 # 아이보리
+        Rectangle:
+            pos: self.pos # MainScreen의 시작 위치
+            size: self.size # MainScreen의 크기

@@ -1,0 +1,75 @@
+# screens/settings_main_screen.kv
+#:kivy 2.2.1
+#:import dp kivy.metrics.dp
+#:import DEFAULT_FONT kivy.core.text.DEFAULT_FONT
+#:import Factory kivy.factory.Factory
+
+<SettingsMainScreen>:
+    name: "settings_main"
+    md_bg_color: 0.95, 0.95, 0.95, 1
+
+    MDBoxLayout:
+        orientation: 'vertical'
+        padding: dp(20)
+        spacing: dp(15)
+
+        MDLabel:
+            text: "[b]설정[/b]"
+            font_style: "H6"
+            halign: "center"
+            text_color: 0, 0, 0, 1
+            size_hint_y: None
+            height: self.texture_size[1] + dp(10)
+            font_name: "NotoSansKR"
+            markup: True
+
+        # [추가] 진행 상태 표시를 위한 MDProgressBar와 MDLabel
+        MDProgressBar:
+            id: update_progress_bar
+            value: app.api_update_progress.progress_value
+            size_hint_y: None
+            height: dp(10)
+            color: app.theme_cls.primary_color # 또는 다른 색상 (예: 0, 0.6, 0.8, 1)
+
+        MDLabel:
+            id: update_status_label
+            # text: app.api_update_progress.progress_text # App 클래스에서 관리하는 텍스트 바인딩
+            halign: "center"
+            font_name: "NotoSansKR"
+            theme_text_color: "Primary" # 또는 "Custom"으로 검은색
+            text_color: 0, 0, 0, 1 # 검은색 텍스트 (배경과 잘 보이도록)
+            size_hint_y: None
+            height: self.texture_size[1] + dp(5)
+            padding_y: dp(5) # 위아래 여백 추가
+        # -----------------------------------------------
+
+        ScrollView: 
+            MDBoxLayout:
+                orientation: 'vertical'
+                padding: dp(10)
+                spacing: dp(10)
+                adaptive_height: True
+
+                MDRaisedButton:
+                    text: "전국 산행 정보 업데이트"
+                    font_name: "NotoSansKR"
+                    size_hint_y: None
+                    height: dp(48)
+                    pos_hint: {'center_x': 0.5}
+                    on_release: root.update_mountain_data_from_api()
+
+                MDRaisedButton:
+                    text: "전국 둘레길 정보 업데이트"
+                    font_name: "NotoSansKR"
+                    size_hint_y: None
+                    height: dp(48)
+                    pos_hint: {'center_x': 0.5}
+                    on_release: print("DEBUG: 전국 둘레길 정보 업데이트 버튼 클릭됨")
+
+        MDRaisedButton:
+            text: "뒤로"
+            font_name: "NotoSansKR"
+            size_hint_y: None
+            height: dp(48)
+            pos_hint: {'center_x': 0.5}
+            on_release: root._go_back_to_main_screen()
